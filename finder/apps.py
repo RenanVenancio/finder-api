@@ -9,5 +9,5 @@ class FinderConfig(AppConfig):
         from recognition.job import train_job
         from apscheduler.schedulers.background import BackgroundScheduler
         scheduler = BackgroundScheduler()
-        scheduler.add_job(train_job, 'interval', minutes=1)
+        scheduler.add_job(train_job, 'interval', minutes=1440)
         scheduler.start()

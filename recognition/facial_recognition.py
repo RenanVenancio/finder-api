@@ -119,7 +119,6 @@ class Recognizer:
         acertos = 0
         erros = 0
         imagens = 0
-        csv_data = []
         for f in os.listdir(diretorio_treinamento):
             print(imagens, f)
             if os.path.isfile(os.path.join(diretorio_treinamento, f)):
@@ -141,9 +140,30 @@ class FacialRecognition:
         self.classifier = cv.face.LBPHFaceRecognizer_create()
         self.classifier_dir = classifier_dir
 
+    def resize_image(self, image_pil, width, height):
+        '''
+        Resize PIL image keeping ratio and using white background.
+        '''
+        ratio_w = width / image_pil.width
+        ratio_h = height / image_pil.height
+        if ratio_w < ratio_h:
+            # It must be fixed by width
+            resize_width = width
+            resize_height = round(ratio_w * image_pil.height)
+        else:
+            # Fixed by height
+            resize_width = round(ratio_h * image_pil.width)
+            resize_height = height
+        image_resize = image_pil.resize((resize_width, resize_height), Image.ANTIALIAS)
+        background = Image.new('RGBA', (width, height), (255, 255, 255, 255))
+        offset = (round((width - resize_width) / 2), round((height - resize_height) / 2))
+        background.paste(image_resize, offset)
+        return background.convert('RGB')
+
+
     def prepare_image(self, file, ignore_eyes=False):
         file = file.convert('L')
-        # file.show()
+        #file.show()
         img = np.asarray(file, 'uint8')
         face = self.extract_roi_face(img, ignore_eyes)
         if len(face) > 0:
@@ -178,8 +198,9 @@ class FacialRecognition:
         return []
 
     def train_lbph(self, images, labels):
-        lbph = cv.face.LBPHFaceRecognizer_create(neighbors=16, radius=2)
+        lbph = cv.face.LBPHFaceRecognizer_create()
         lbph.train(images, labels)
+        os.remove(self.classifier_dir)
         lbph.write(self.classifier_dir)
 
     def recognize_lbph(self, img):
@@ -191,3 +212,25 @@ class FacialRecognition:
         '''Extraxi face, e realzia o reocnhecimento'''
         img = self.prepare_image(img, ignore_eyes)
         return self.recognize_lbph(np.asarray(img, 'uint8'))
+
+    def webcam_capture(self):
+        cam = cv.VideoCapture(0)
+        font = cv.FONT_HERSHEY_COMPLEX_SMALL
+        self.classifier.read(self.classifier_dir)
+        while True:
+            connected, img = cam.read()
+            width, height = 200, 200
+            grey_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+            faces_classifier = cv.CascadeClassifier(CLASSIFICATORS_ROOT + '/haarcascade_frontalface.xml')
+            detected_faces = faces_classifier.detectMultiScale(grey_image)
+            for (x, y, w, h) in detected_faces:
+                cv.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                img_face = cv.resize(grey_image[y:y + h, x:x + w], (width, height))
+                id, confidence = self.classifier.predict(cv.flip(img_face, 1))
+                cv.putText(img, str(id) + ' - ' + str(confidence), (x, y + (h+35)), font, 2, (0, 0, 255))
+
+            cv.imshow("Face", img)
+            if cv.waitKey(1) == ord('q'):
+                break
+        cam.release()
+        cv.destroyAllWindows()

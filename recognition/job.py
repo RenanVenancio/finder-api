@@ -4,6 +4,7 @@ from finder.settings import MEDIA_ROOT
 from person.models import MissingPersonPhotos
 from PIL import Image, ImageOps
 import numpy as np
+import cv2 as cv
 
 from recognition import facial_recognition
 
@@ -14,7 +15,10 @@ def train_job():
         images, labels = [], []
         for i in data:
             try:
-                img = Image.open(fp=MEDIA_ROOT + '\\train\\' + i.photo.name).convert('L')
+                #img = Image.open(fp=MEDIA_ROOT + '\\train\\' + i.photo.name)
+                img = cv.imread(MEDIA_ROOT + '\\train\\' + i.photo.name)
+                #cv.imshow("ola",img)
+                img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
                 images.append(np.asarray(img, 'uint8'))
                 labels.append(i.missing_person.id)
             except:

@@ -37,6 +37,7 @@ class MissingPerson(models.Model):
     facial_recognition = models.BooleanField(null=True, blank=True)
     special_features = models.CharField(max_length=500, blank=False, null=False)
     date_of_disappearance = models.DateField(null=False, blank=False)
+    alert_email = models.EmailField(null=False, blank=False)
     insert_date = models.DateTimeField(auto_now_add=True)
 
 
@@ -52,9 +53,11 @@ class MissingPersonPhotos(models.Model):
             recognizer = FacialRecognition()
             file = Image.open(self.photo)
             file = ImageOps.exif_transpose(file)
+            #file = file.thumbnail((400, 400))
+            file = recognizer.resize_image(file, 800, 600)
             file_ext = self.photo.file.content_type
             file_name = str(uuid.uuid4())
             file_ext = file_ext.split('/')[1]
             self.photo.name = file_name + '.' + file_ext
-            recognizer.prepare_image(file).convert('L').save(MEDIA_ROOT + '/train/' + file_name + '.' + file_ext, file_ext)
+            recognizer.prepare_image(file).save(MEDIA_ROOT + '/train/' + file_name + '.' + file_ext, file_ext)
         super(MissingPersonPhotos, self).save(*args, **kwargs)
