@@ -16,6 +16,7 @@ from person.models import MissingPerson
 from PIL import Image, ImageOps
 
 from recognition.facial_recognition import Recognizer, FacialRecognition
+from recognition.job import train_job
 
 
 class MissingPersonViewSet(viewsets.ModelViewSet):
@@ -44,6 +45,20 @@ class MissingPersonImageUpload(ModelViewSet):
     serializer_class = MissingPersonSerializerPhotosSerializer
 
 
+class CameraCapture(APIView):
+    def get(self, request):
+        recognizer = FacialRecognition()
+        recognizer.webcam_capture()
+
+
+class TrainAlgorithm(APIView):
+    def get(self, request):
+        response = {}
+        train_job()
+        response['message'] = 'treinamento efetuado com sucesso'
+        return JsonResponse(response, safe=False)
+
+
 class MissingPersonRecognize(APIView):
     parser_class = (FileUploadParser,)
 
@@ -54,13 +69,22 @@ class MissingPersonRecognize(APIView):
                 data=serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST
             )
-        file = Image.open(request.FILES['file'])
         recognizer = FacialRecognition()
-        id, prec = recognizer.recognize_raw_img(file, True)
+        person_details = {}
+        file = Image.open(request.FILES['file'])
+        file = ImageOps.exif_transpose(file)
+        file = recognizer.resize_image(file, 800, 600)
+        id, prec = recognizer.recognize_raw_img(file, False)
         person = MissingPerson.objects.filter(id=id)
-        serializer = MissingPersonSerializer(person, many=True)
+        person = person[0]
+        person_details['id'] = person.id
+        person_details['name'] = person.name
+        person_details['confidence'] = prec
+        person_details['state'] = person.state
 
-        return JsonResponse(serializer.data, safe=False)
+        # serializer = MissingPersonSerializer(person, many=True)
+
+        return JsonResponse(person_details, safe=False)
 
 
 '''

@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path, include
-from person.views import MissingPersonViewSet, MissingPersonImageUpload, MissingPersonList, MissingPersonRecognize
+from person.views import MissingPersonViewSet, MissingPersonImageUpload, MissingPersonList, MissingPersonRecognize, CameraCapture, TrainAlgorithm
 from rest_framework import routers
 from django.conf.urls.static import static
 
@@ -16,5 +16,7 @@ router.register('photo', MissingPersonImageUpload, basename="photo")
 urlpatterns = [
     path('api/', include(router.urls)),
     path('api/persons', MissingPersonList.as_view(), name="personslist"),
-    path('api/photoRecognize', MissingPersonRecognize.as_view(), name="photorecognize")
+    path('api/photoRecognize', MissingPersonRecognize.as_view(), name="photorecognize"),
+    path('api/cameraCapture', CameraCapture.as_view(), name="cameracapture"),
+    path('api/trainAlgorithm', TrainAlgorithm.as_view(), name="trainalgorithm")
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
