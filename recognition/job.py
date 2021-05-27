@@ -23,6 +23,6 @@ def train_job():
                 labels.append(i.missing_person.id)
             except:
                 pass
-        print(labels)
+        print(np.array(labels))
         recognizer = facial_recognition.FacialRecognition()
         recognizer.train_lbph(images, np.array(labels))

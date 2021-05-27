@@ -160,10 +160,9 @@ class FacialRecognition:
         background.paste(image_resize, offset)
         return background.convert('RGB')
 
-
     def prepare_image(self, file, ignore_eyes=False):
         file = file.convert('L')
-        #file.show()
+        # file.show()
         img = np.asarray(file, 'uint8')
         face = self.extract_roi_face(img, ignore_eyes)
         if len(face) > 0:
@@ -192,7 +191,9 @@ class FacialRecognition:
 
     def detect_eyes(self, img):
         eyes_classifier = cv.CascadeClassifier(CLASSIFICATORS_ROOT + '/haarcascade_eye.xml')
-        eyes = eyes_classifier.detectMultiScale(img, scaleFactor=1.3, minNeighbors=5)
+        eyes = eyes_classifier.detectMultiScale(img, scaleFactor=1.1,
+                                                minNeighbors=4,
+                                                minSize=(30, 30))
         if len(eyes) >= 2:
             return eyes
         return []
@@ -227,7 +228,7 @@ class FacialRecognition:
                 cv.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 img_face = cv.resize(grey_image[y:y + h, x:x + w], (width, height))
                 id, confidence = self.classifier.predict(cv.flip(img_face, 1))
-                cv.putText(img, str(id) + ' - ' + str(confidence), (x, y + (h+35)), font, 2, (0, 0, 255))
+                cv.putText(img, str(id) + ' - ' + str(confidence), (x, y + (h + 35)), font, 2, (0, 0, 255))
 
             cv.imshow("Face", img)
             if cv.waitKey(1) == ord('q'):

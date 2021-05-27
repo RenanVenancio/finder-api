@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'finder.apps.FinderConfig',
     'person',
-    'recognition'
+    'recognition',
+    'finder_admin'
 ]
 
 REST_FRAMEWORK = {
@@ -64,7 +65,6 @@ MIDDLEWARE = [
 CORS_ORIGIN_ALLOW_ALL = True
 ALLOWED_HOSTS = ['*']
 CORS_ORIGIN_WHITELIST = []
-
 
 ROOT_URLCONF = 'finder.urls'
 
@@ -138,5 +138,3 @@ STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 CLASSIFICATORS_ROOT = os.path.join(BASE_DIR, "classificadores")
-
-

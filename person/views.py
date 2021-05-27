@@ -6,16 +6,13 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FileUploadParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.contrib import messages
-from rest_framework.views import exception_handler
 from rest_framework.viewsets import ModelViewSet
-import numpy as np
 
+from finder_admin.views import Email
 from person.serializer import MissingPersonSerializer, MissingPersonSerializerPhotosSerializer, FileSerializer
 from person.models import MissingPerson
 from PIL import Image, ImageOps
-
-from recognition.facial_recognition import Recognizer, FacialRecognition
+from recognition.facial_recognition import FacialRecognition
 from recognition.job import train_job
 
 
@@ -59,6 +56,28 @@ class TrainAlgorithm(APIView):
         return JsonResponse(response, safe=False)
 
 
+class SendAlertEmail(APIView):
+    def post(self, request):
+        response = {}
+        message = request.data['message']
+        person_id = request.data['person_id']
+        longitude = request.data['lng']
+        latitude = request.data['lat']
+        maps_link = 'https://maps.google.com/?q='+ str(latitude) + ',' + str(longitude)
+        person = MissingPerson.objects.filter(id=person_id).last()
+        html_message = '<h1>Olá, alguêm avistou  alguém parecido(a) com {}</h2>' \
+                       '<p>Verifique atentamente a mensagem da pessoa que o avistou, na mesma podem ' \
+                       'conter informações relevantes sobre o paradeiro da pessoa que procura.</p>' \
+                       '<small>Mensagem:</small>' \
+                       '<p>{}</p>' \
+                       '<p>Logo abaixo está o link da localização cedido pela pessoa que enviou o alerta</p>' \
+                       '<a href="{}">Localização</a>'.format(person.name, message, maps_link)
+        Email.send_email(message_html=html_message,recipient_list=[person.alert_email], subject='Finder: Alerta')
+        train_job()
+        response['message'] = 'treinamento efetuado com sucesso'
+        return JsonResponse(response, safe=False)
+
+
 class MissingPersonRecognize(APIView):
     parser_class = (FileUploadParser,)
 
@@ -74,7 +93,7 @@ class MissingPersonRecognize(APIView):
         file = Image.open(request.FILES['file'])
         file = ImageOps.exif_transpose(file)
         file = recognizer.resize_image(file, 800, 600)
-        id, prec = recognizer.recognize_raw_img(file, False)
+        id, prec = recognizer.recognize_raw_img(file, True)
         person = MissingPerson.objects.filter(id=id)
         person = person[0]
         person_details['id'] = person.id
